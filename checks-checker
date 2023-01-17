@@ -4,13 +4,40 @@ import re
 import sys
 import types
 from urllib.parse import urlparse
+import argparse
 
 import requests
 import yaml
 from bs4 import BeautifulSoup
 
 
-def checkUrl(url):
+def getUrlsFromText(text):
+    """Returns URLs found in a text
+
+    Taken from https://www.geeksforgeeks.org/python-check-url-string/
+
+    Parameters:
+    text (string): The text to search for URLs
+
+    Returns:
+    urls (list): A list of URLs that have been found in the text
+
+    """
+    regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+    result = re.findall(regex, text)
+    urls = [x[0] for x in result]
+    return urls
+
+def checkUrl(url: str):
+    """Checks an URL for validity
+
+    Parameters:
+    url (string): The text to search for URLs
+
+    Returns:
+    errorcount (int): returns 1 if an error was encountered, 0 otherwise
+
+    """
     parts = urlparse(url)
     fragment=parts.fragment
     try:
@@ -36,29 +63,55 @@ def checkUrl(url):
             return 1
         logging.debug(f"found fragment \"{fragment}\"") 
     logging.info(f"no issues with {url}")
-    return 0
+    return int(0)
 
-def checkCheckUrls(check):
+def checkCheckUrls(check: dict):
+    """Checks the URLs in a check
+
+    Parameters:
+    check (dict): The check to check the URLs of 
+
+    Returns:
+    errorcount (int): returns the number of errors encountered, if any
+
+    """
     urlErrors=0
     # Check URLs in remediation text
-    regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
     if not check['remediation']:
         logging.info("Check has no remediation section, skipping check")
         return 0
-    urls = re.findall(regex, check['remediation'])
+    urls = getUrlsFromText(check['remediation'])
     logging.debug(f"{len(urls)} URLs found")
     if len(urls)>0:
         for url in urls:
-            urlErrors += checkUrl(url[0])
+            urlErrors += checkUrl(url)
     return urlErrors
 
-def checkCheck(check):
+def checkCheck(check: dict):
+    """Checks a check
+
+    Parameters:
+    check (dict): The check to check 
+
+    Returns:
+    errorcount (int): returns the number of errors encountered, if any
+
+    """
     checkErrors=0
     logging.info(f"checking check {check['id']}")
     checkErrors+=checkCheckUrls(check)
     return checkErrors
 
 def getChecksfromCheckFile(filename):
+    """parses a checks file and returns a list of the contained check(s) as dictionary 
+
+    Parameters:
+    filename (string): name of the checks file to parse
+
+    Returns:
+    checks (list): checks contained in the parsed file (list of dicts)
+
+    """
     logging.debug(f"processing file {filename}")
     checks=[]
     try:
@@ -66,7 +119,7 @@ def getChecksfromCheckFile(filename):
             docs = yaml.safe_load_all(file)
             if not isinstance(docs, types.GeneratorType):
                 logging.warning(f"file \"{filename}\" contains no valid YAML documents, skipping")
-                return
+                return []
             for check in docs:
                 if not check['id']:
                     logging.debug("Check has no id property, skipping")
@@ -77,17 +130,32 @@ def getChecksfromCheckFile(filename):
     logging.debug(f"found {len(checks)} checks in file \"{filename}\"")
     return checks
 
+
+#---------------------------------
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description ='Check Wanda checks')
+    
+    parser.add_argument(dest ='filenames', metavar ='filename', nargs ='+',
+                        help ='checks file')
+    
+    parser.add_argument('-d', dest ='debugMode',
+                        action ='store_true', help ='debug mode')
+    args = parser.parse_args()
+
     logformat='%(levelname)s: %(message)s'
-    logging.basicConfig(level=logging.WARNING, format=logformat)
-    #logging.basicConfig(level=logging.DEBUG, format=logformat)
+    if args.debugMode:
+        logging.basicConfig(level=logging.DEBUG, format=logformat)
+    else:
+        logging.basicConfig(level=logging.WARNING, format=logformat)
 
     allErrors=0
     # Check all files given as parameters
-    for _, arg in enumerate(sys.argv[1:]):
-        checks=getChecksfromCheckFile(arg)
+    for filename in args.filenames:
+        checks=getChecksfromCheckFile(filename)
         for check in checks:
             allErrors += checkCheck(check)
     
     logging.shutdown()
+    # Return 1 if any erros occured, or 0 if everything was ok
     exit(int(allErrors > 0))

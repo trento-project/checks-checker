@@ -8,14 +8,14 @@ Currently it only checks the URLs in the remediation section of the checks for v
 
 ## Usage
 
-Call the `checks-checker.py` script with a filename or filenames of check files as parameters, e.g.
+Call the `checks-checker` script with a filename or filenames of check files as parameters, e.g.
 
 ```
-checks-checker.py ../wanda/priv/catalog/*.yaml
+checks-checker ../wanda/priv/catalog/*.yaml
 ```
 or
 ```
-checks-checker.py DA114A.yaml 61451E.yaml 816815.yaml
+checks-checker DA114A.yaml 61451E.yaml 816815.yaml
 ```
 
 The script returns an exit code of 1 if there were errors encountered
