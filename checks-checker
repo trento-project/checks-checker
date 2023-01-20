@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
+import argparse
 import logging
 import re
 import sys
 import types
 from urllib.parse import urlparse
-import argparse
 
 import requests
 import yaml
@@ -152,10 +152,13 @@ if __name__ == "__main__":
     allErrors=0
     # Check all files given as parameters
     for filename in args.filenames:
-        checks=getChecksfromCheckFile(filename)
-        for check in checks:
-            allErrors += checkCheck(check)
-    
+        try:
+            checks=getChecksfromCheckFile(filename)
+            for check in checks:
+                allErrors += checkCheck(check)
+        except IsADirectoryError:
+            pass
+        
     logging.shutdown()
     # Return 1 if any erros occured, or 0 if everything was ok
     exit(int(allErrors > 0))

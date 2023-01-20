@@ -8,6 +8,11 @@ Currently it only checks the URLs in the remediation section of the checks for v
 
 ## Usage
 
+Make sure the required modules are available:
+```
+pip3 install -r requirements.txt
+```
+
 Call the `checks-checker` script with a filename or filenames of check files as parameters, e.g.
 
 ```
