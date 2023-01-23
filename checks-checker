@@ -5,6 +5,7 @@ import re
 import sys
 import types
 from urllib.parse import urlparse
+import glob
 
 import requests
 import yaml
@@ -131,34 +132,42 @@ def getChecksfromCheckFile(filename):
     return checks
 
 
-#---------------------------------
-if __name__ == "__main__":
+def main():
 
+    # Parse Arguments
     parser = argparse.ArgumentParser(description ='Check Wanda checks')
-    
-    parser.add_argument(dest ='filenames', metavar ='filename', nargs ='+',
-                        help ='checks file')
-    
-    parser.add_argument('-d', dest ='debugMode',
-                        action ='store_true', help ='debug mode')
+    parser.add_argument(dest='filenames', metavar='filename', nargs='+', help='checks file')
+    parser.add_argument('-l', '--log-level', dest='loglevel', default='WARNING', action='store', help='set log level')
     args = parser.parse_args()
 
-    logformat='%(levelname)s: %(message)s'
-    if args.debugMode:
-        logging.basicConfig(level=logging.DEBUG, format=logformat)
-    else:
-        logging.basicConfig(level=logging.WARNING, format=logformat)
+    # Set up logging
+    logger = logging.getLogger()
+    logFormatter = logging.Formatter(fmt='%(levelname)s: %(message)s')
+    logHandler = logging.StreamHandler()
+    logHandler.setFormatter(logFormatter)
+    logger.addHandler(logHandler)
+    try:
+        logger.setLevel(args.loglevel)
+    except ValueError:
+        logging.critical("Invalid log level: {} (valid levels: DEBUG, INFO, WARNING, ERROR)".format(args.loglevel))
+        sys.exit(255)
 
     allErrors=0
     # Check all files given as parameters
-    for filename in args.filenames:
-        try:
-            checks=getChecksfromCheckFile(filename)
-            for check in checks:
-                allErrors += checkCheck(check)
-        except IsADirectoryError:
-            pass
-        
+    for pattern in args.filenames:
+        for filename in glob.iglob(pattern, recursive=True):
+            try:
+                checks=getChecksfromCheckFile(filename)
+                for check in checks:
+                    allErrors += checkCheck(check)
+            except IsADirectoryError:
+                pass
+
     logging.shutdown()
     # Return 1 if any erros occured, or 0 if everything was ok
     exit(int(allErrors > 0))
+
+
+#---------------------------------
+if __name__ == '__main__':
+    main()

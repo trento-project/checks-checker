@@ -1,4 +1,4 @@
-FROM python:3
+FROM registry.suse.com/bci/python:3
 WORKDIR /app
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt

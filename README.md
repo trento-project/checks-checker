@@ -8,6 +8,12 @@ Currently it only checks the URLs in the remediation section of the checks for v
 
 ## Usage
 
+Optional: Create and activate a virtual environment:
+```
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
 Make sure the required modules are available:
 ```
 pip3 install -r requirements.txt
@@ -24,3 +30,16 @@ checks-checker DA114A.yaml 61451E.yaml 816815.yaml
 ```
 
 The script returns an exit code of 1 if there were errors encountered
+
+
+### Container Image
+
+The container image can be used as follows:
+```
+docker run -it --rm -v <SOURCE_PATH>:/checks ghcr.io/gereonvey/checks-checker:main -l INFO priv/catalog/*.yaml
+```
+
+Or alternatively, you can use environment variables to specify check files and parameters
+```
+docker run -it --rm -v <SOURCE_PATH>:/checks -e CHECKFILES="priv/catalog/*.yaml" -e PARAMETERS="-l INFO" ghcr.io/gereonvey/checks-checker:main 
+```

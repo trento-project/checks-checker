@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-python3 /app/checks-checker $CHECKFILES $*
+python3 /app/checks-checker $PARAMETERS $CHECKFILES $*
