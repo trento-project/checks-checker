@@ -12,7 +12,7 @@ import yaml
 from bs4 import BeautifulSoup
 
 
-def getUrlsFromText(text):
+def getUrlsFromText(text) -> list:
     """Returns URLs found in a text
 
     Taken from https://www.geeksforgeeks.org/python-check-url-string/
@@ -29,7 +29,7 @@ def getUrlsFromText(text):
     urls = [x[0] for x in result]
     return urls
 
-def checkUrl(url: str):
+def checkUrl(url: str) -> int:
     """Checks an URL for validity
 
     Parameters:
@@ -64,9 +64,9 @@ def checkUrl(url: str):
             return 1
         logging.debug(f"found fragment \"{fragment}\"") 
     logging.info(f"no issues with {url}")
-    return int(0)
+    return 0
 
-def checkCheckUrls(check: dict):
+def checkCheckUrls(check: dict) -> int:
     """Checks the URLs in a check
 
     Parameters:
@@ -78,7 +78,7 @@ def checkCheckUrls(check: dict):
     """
     urlErrors=0
     # Check URLs in remediation text
-    if not check['remediation']:
+    if 'remediation' not in check:
         logging.info("Check has no remediation section, skipping check")
         return 0
     urls = getUrlsFromText(check['remediation'])
@@ -88,7 +88,7 @@ def checkCheckUrls(check: dict):
             urlErrors += checkUrl(url)
     return urlErrors
 
-def checkCheck(check: dict):
+def checkCheck(check: dict) -> int:
     """Checks a check
 
     Parameters:
@@ -103,7 +103,7 @@ def checkCheck(check: dict):
     checkErrors+=checkCheckUrls(check)
     return checkErrors
 
-def getChecksfromCheckFile(filename):
+def getChecksfromCheckFile(filename) -> list:
     """parses a checks file and returns a list of the contained check(s) as dictionary 
 
     Parameters:
