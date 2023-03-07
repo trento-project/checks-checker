@@ -137,7 +137,7 @@ def main():
     # Parse Arguments
     parser = argparse.ArgumentParser(description ='Check Wanda checks')
     parser.add_argument(dest='filenames', metavar='filename', nargs='+', help='checks file')
-    parser.add_argument('-l', '--log-level', dest='loglevel', default='WARNING', action='store', help='set log level')
+    parser.add_argument('-l', '--log-level', dest='loglevel', default='INFO', action='store', help='set log level')
     args = parser.parse_args()
 
     # Set up logging

@@ -36,10 +36,10 @@ The script returns an exit code of 1 if there were errors encountered
 
 The container image can be used as follows:
 ```
-docker run -it --rm -v <SOURCE_PATH>:/checks ghcr.io/gereonvey/checks-checker:main -l INFO priv/catalog/*.yaml
+docker run -it --rm -v "${PWD}":/checks ghcr.io/trento-project/checks-checker priv/catalog/*.yaml
 ```
 
 Or alternatively, you can use environment variables to specify check files and parameters
 ```
-docker run -it --rm -v <SOURCE_PATH>:/checks -e CHECKFILES="priv/catalog/*.yaml" -e PARAMETERS="-l INFO" ghcr.io/gereonvey/checks-checker:main 
+docker run -it --rm -v "${PWD}":/checks -e CHECKFILES="priv/catalog/*.yaml" ghcr.io/trento-project/checks-checker 
 ```
