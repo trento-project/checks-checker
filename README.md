@@ -39,7 +39,12 @@ The container image can be used as follows:
 docker run -it --rm -v "${PWD}":/checks ghcr.io/trento-project/checks-checker priv/catalog/*.yaml
 ```
 
-Or alternatively, you can use environment variables to specify check files and parameters
+Or alternatively, you can use environment variables to specify check files and parameters:
 ```
 docker run -it --rm -v "${PWD}":/checks -e CHECKFILES="priv/catalog/*.yaml" ghcr.io/trento-project/checks-checker 
+```
+
+You can put this useful alias into your shell configuration:
+```
+alias checks-checker='docker run --rm -it -v "${PWD}":/checks ghcr.io/trento-project/checks-checker'
 ```
