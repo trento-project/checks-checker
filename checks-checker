@@ -39,7 +39,15 @@ def checkUrl(url: str) -> int:
     errorcount (int): returns 1 if an error was encountered, 0 otherwise
 
     """
+    warnings=False
     parts = urlparse(url)
+
+    # We should/must use the single-html version for SUSE documentation
+    # Otherwise links might break if the the document structure changes
+    if parts.hostname == "documentation.suse.com":
+        if "/single-html/" not in parts.path:
+            logging.warning(f"Use the single-html version of the document instead! {url}")
+            warnings=True
     fragment=parts.fragment
     try:
         response = requests.get(url)
@@ -49,8 +57,12 @@ def checkUrl(url: str) -> int:
     if not response.ok:
         logging.error(f"status {response.status_code} returned for {url}")
         return 1
+
+    # If a URL gets redirected, we might want to 
+    # change the documentation link to the redirection target.
     if response.url != url:
         logging.warning(f"got redirected to {response.url} from {url}")
+        warnings=True
     htmlDocument=response.text
     if fragment:
         logging.debug(f"fragment is \"{fragment}\"") 
@@ -63,7 +75,8 @@ def checkUrl(url: str) -> int:
             logging.error(f"fragment \"{fragment}\" not found in {url}")
             return 1
         logging.debug(f"found fragment \"{fragment}\"") 
-    logging.info(f"no issues with {url}")
+    if not warnings: 
+        logging.info(f"no issues with {url}") 
     return 0
 
 def checkCheckUrls(check: dict) -> int:
