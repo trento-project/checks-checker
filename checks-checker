@@ -12,7 +12,7 @@ import yaml
 from bs4 import BeautifulSoup
 
 
-def getUrlsFromText(text) -> list:
+def getUrlsFromText(text) -> set:
     """Returns URLs found in a text
 
     Taken from https://www.geeksforgeeks.org/python-check-url-string/
@@ -21,63 +21,63 @@ def getUrlsFromText(text) -> list:
     text (string): The text to search for URLs
 
     Returns:
-    urls (list): A list of URLs that have been found in the text
+    urls (set): A list of URLs that have been found in the text
 
     """
     regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
     result = re.findall(regex, text)
-    urls = [x[0] for x in result]
+    urls = set([x[0] for x in result])
     return urls
 
-def checkUrl(url: str) -> int:
+#def checkUrl(url: str) -> tuple(list(str), list(str)):
+def checkUrl(url: str) -> tuple:
     """Checks an URL for validity
 
     Parameters:
     url (string): The text to search for URLs
 
     Returns:
-    errorcount (int): returns 1 if an error was encountered, 0 otherwise
-
+      (errors, warnings)
     """
-    warnings=False
+    warnings=[]
+    errors=[]
+
     parts = urlparse(url)
 
-    # We should/must use the single-html version for SUSE documentation
-    # Otherwise links might break if the the document structure changes
+    # formal checks first
     if parts.hostname == "documentation.suse.com":
+        # We should/must use the single-html version for SUSE documentation
+        # Otherwise links might break if the the document structure changes
         if "/single-html/" not in parts.path:
-            logging.warning(f"Use the single-html version of the document instead! {url}")
-            warnings=True
-    fragment=parts.fragment
+            errors.append(f"Use the single-html version of the document instead! {url}")
+        if not parts.fragment:
+            errors.append(f"no fragment used in {url}")
+
+    # After the formal checks, try to actually access the URL
     try:
         response = requests.get(url)
     except requests.ConnectionError:
-        logging.error(f"Connection failed for {url}")
-        return 1
+        errors.append(("e",f"Connection failed for {url}"))
+        return
     if not response.ok:
-        logging.error(f"status {response.status_code} returned for {url}")
-        return 1
+        errors.append(f"status {response.status_code} returned for {url}")
+        return
 
     # If a URL gets redirected, we might want to 
     # change the documentation link to the redirection target.
     if response.url != url:
-        logging.warning(f"got redirected to {response.url} from {url}")
-        warnings=True
+        warnings.append(f"got redirected to {response.url} from {url}")
     htmlDocument=response.text
-    if fragment:
-        logging.debug(f"fragment is \"{fragment}\"") 
+    if parts.fragment:
         soup = BeautifulSoup(htmlDocument, 'html.parser')
-        htmlElements=soup.find_all(id=fragment)
+        htmlElements=soup.find_all(id=parts.fragment)
         if len(htmlElements)==0:
             # Not an id, trying name
-            htmlElements=soup.find_all(name=fragment)        
+            htmlElements=soup.find_all(name=parts.fragment)        
         if len(htmlElements)==0:
-            logging.error(f"fragment \"{fragment}\" not found in {url}")
+            errors.append(f"fragment \"{parts.fragment}\" not found in {url}")
             return 1
-        logging.debug(f"found fragment \"{fragment}\"") 
-    if not warnings: 
-        logging.info(f"no issues with {url}") 
-    return 0
+    return (errors, warnings)
 
 def checkCheckUrls(check: dict) -> int:
     """Checks the URLs in a check
@@ -92,13 +92,19 @@ def checkCheckUrls(check: dict) -> int:
     urlErrors=0
     # Check URLs in remediation text
     if 'remediation' not in check:
-        logging.info("Check has no remediation section, skipping check")
+        logging.info(f"Check {check['id']} has no remediation section, skipping check")
         return 0
     urls = getUrlsFromText(check['remediation'])
     logging.debug(f"{len(urls)} URLs found")
     if len(urls)>0:
         for url in urls:
-            urlErrors += checkUrl(url)
+            errors, warnings = checkUrl(url)
+            for warning in warnings:
+                logging.warning(f"check {check['id']}: {warning}")
+            for error in errors:
+                logging.error(f"check {check['id']}: {error}")
+            urlErrors += len(errors)
+
     return urlErrors
 
 def checkCheck(check: dict) -> int:
@@ -150,7 +156,7 @@ def main():
     # Parse Arguments
     parser = argparse.ArgumentParser(description ='Check Wanda checks')
     parser.add_argument(dest='filenames', metavar='filename', nargs='+', help='checks file')
-    parser.add_argument('-l', '--log-level', dest='loglevel', default='INFO', action='store', help='set log level')
+    parser.add_argument('-l', '--log-level', dest='loglevel', default='WARNING', action='store', help='set log level')
     args = parser.parse_args()
 
     # Set up logging
