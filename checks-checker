@@ -68,8 +68,12 @@ def checkUrl(url: str) -> tuple:
     if response.url != url:
         warnings.append(f"got redirected to {response.url} from {url}")
     htmlDocument=response.text
+    
+    # Parse the document
+    soup = BeautifulSoup(htmlDocument, 'html.parser')
+
+    # If the URL has a fragment, look for it in the document
     if parts.fragment:
-        soup = BeautifulSoup(htmlDocument, 'html.parser')
         htmlElements=soup.find_all(id=parts.fragment)
         if len(htmlElements)==0:
             # Not an id, trying name
@@ -77,6 +81,32 @@ def checkUrl(url: str) -> tuple:
         if len(htmlElements)==0:
             errors.append(f"fragment \"{parts.fragment}\" not found in {url}")
             return 1
+
+    # get the canonical link of the document    
+    canonical_links=soup.select('head link[rel*=canonical]')
+    # # Sometimes documents have multiple instances of canonical links
+    # # I've never experienced them differ, so we don't care  
+    # if len(canonical_links)>1:
+    #     print("More than 1 canonical link!")
+    #     for canonical_link in canonical_links:
+    #         print(f"Canonical link: {canonical_link['href']}")
+    canonical_url=canonical_links[0]['href']
+
+    # for suse documentation, remove the index.html suffix (probably works for everyone else too) 
+    if parts.hostname == "documentation.suse.com":
+        # Python 3.9 and newer: canonical.removesuffix('index.html')
+        if canonical_url.endswith('index.html'):
+            canonical_url = canonical_url[:-10]
+    # add the fragment to the canonical URL, if any
+    if parts.fragment:
+        canonical_url += "#" + parts.fragment
+    # Warn if the URL used is not the canonical one
+    if canonical_url != url:
+        if parts.hostname == "documentation.suse.com":
+            errors.append(f"Not the canonical URL! Use {canonical_url} instead of {url}")
+        else:
+            warnings.append(f"Not the canonical URL! Use {canonical_url} instead of {url}")
+
     return (errors, warnings)
 
 def checkCheckUrls(check: dict) -> int:
