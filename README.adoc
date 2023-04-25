@@ -1,0 +1,83 @@
+# Wanda Checks Checker
+
+A script to check link:https://github.com/trento-project/wanda[Wanda] checks. 
+
+Currently it checks the URLs in the remediation section of the checks for validity. 
+For each URL it checks the following:
+
+|===
+| Check | Warning/Error | Description/Reason
+
+| Is the single-html version used? (SUSE documentation only)
+| Error
+| The single-html version of a document is preferred, since the URLs will not become invalid, in case the document is rearranged for some reason.
+
+| Is a fragment/anchor being used? (SUSE documentation only)
+| Error
+| Documents can be quite long, finding the relevant information is hard. Therefore fragments/anchors should be used to point to a specific section of the document.
+
+| Can the URL be retrieved?
+| Error
+| Sometimes documents move, or get removed...
+
+| Is the URL being redirected?
+| Warning
+| A redirection is a good indicator that the current URL might become invalid in the future.
+
+| Does the anchor exist in the document?
+| Error
+| If a fragment is used in an URL, the corresponding anchor (in form of an id or name attribute) should exist.
+
+| Is the canonical URL being used?
+| Error (SUSE Documentation) or Warning
+| Many documents specify a canonical URL. Not using this primary URL might lead to redirects or even inaccessability of the document in the future.
+For SUSE documentation not using the canonical URL repesents an error, and a warning for all other documentation.
+
+|=== 
+
+Errors should be fixed immediately.
+
+Warnings should be taken care of when the check is touched anyway.
+
+## Usage
+
+Optional: Create and activate a virtual environment:
+```
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Make sure the required modules are available:
+```
+pip3 install -r requirements.txt
+```
+
+Call the `checks-checker` script with a filename or filenames of check files as parameters, e.g.
+
+```
+checks-checker ../wanda/priv/catalog/*.yaml
+```
+or
+```
+checks-checker DA114A.yaml 61451E.yaml 816815.yaml
+```
+
+The script returns an exit code of 1 if there were errors encountered
+
+
+### Container Image
+
+The container image can be used as follows:
+```
+docker run -it --rm -v "${PWD}":/checks ghcr.io/trento-project/checks-checker priv/catalog/*.yaml
+```
+
+Or alternatively, you can use environment variables to specify check files and parameters:
+```
+docker run -it --rm -v "${PWD}":/checks -e CHECKFILES="priv/catalog/*.yaml" ghcr.io/trento-project/checks-checker 
+```
+
+You can put this useful alias into your shell configuration:
+```
+alias checks-checker='docker run --rm -it -v "${PWD}":/checks ghcr.io/trento-project/checks-checker'
+```

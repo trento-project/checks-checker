@@ -120,9 +120,15 @@ def checkCheckUrls(check: dict) -> int:
 
     """
     urlErrors=0
+    check_type=""
+    if 'premium' in check:
+        if check['premium'] == "true":
+            check_type="premium "
+
+    prefix_check=f"{check_type}check {check['id']}:"
     # Check URLs in remediation text
     if 'remediation' not in check:
-        logging.info(f"Check {check['id']} has no remediation section, skipping check")
+        logging.info(f"{prefix_check} no remediation section, skipping check")
         return 0
     urls = getUrlsFromText(check['remediation'])
     logging.debug(f"{len(urls)} URLs found")
@@ -130,9 +136,9 @@ def checkCheckUrls(check: dict) -> int:
         for url in urls:
             errors, warnings = checkUrl(url)
             for warning in warnings:
-                logging.warning(f"check {check['id']}: {warning}")
+                logging.warning(f"{prefix_check} {warning}")
             for error in errors:
-                logging.error(f"check {check['id']}: {error}")
+                logging.error(f"{prefix_check} {error}")
             urlErrors += len(errors)
 
     return urlErrors
