@@ -4,7 +4,7 @@ import logging
 import re
 import sys
 import types
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 import glob
 
 import requests
@@ -45,6 +45,12 @@ def checkUrl(url: str) -> tuple:
     parts = urlparse(url)
 
     # formal checks first
+    if parts.query:
+        query=parse_qs(parts.query)
+        if parts.hostname == "cloud.google.com":
+            if query['hl']:
+                errors.append(f"Don't request a specific document language (?hl={query['hl'][0]}) in {url}")
+
     if parts.hostname == "documentation.suse.com":
         # We should/must use the single-html version for SUSE documentation
         # Otherwise links might break if the the document structure changes
