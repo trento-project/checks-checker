@@ -1,0 +1,20 @@
+# action.yml
+name: 'Wanda Checks Checker'
+description: 'Check the content of Wanda Checks'
+inputs:
+  checks-path: 
+    description: 'Path to the checks'
+    required: true
+  log-level:  
+    description: 'Path to the checks'
+    required: false
+    default: "WARNING"
+#outputs:
+#  time: # id of output
+#    description: 'The time we greeted you'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  entrypoint: '/app/action.sh'
+  args: 
+    - ${{ inputs.checks-path }}
