@@ -6,6 +6,7 @@ import sys
 import types
 from urllib.parse import urlparse, parse_qs
 import glob
+import os
 
 import requests
 import yaml
@@ -177,12 +178,18 @@ def getChecksfromCheckFile(filename) -> list:
                 logging.warning(f"file \"{filename}\" contains no valid YAML documents, skipping")
                 return []
             for check in docs:
-                if not check['id']:
+                if isinstance(check, str):
+                    logging.debug("File is not YAML, skipping")
+                    continue
+                if not 'id' in check:
                     logging.debug("Check has no id property, skipping")
                     continue
                 checks.append(check)
     except FileNotFoundError:
         logging.debug(f"file \"{filename}\" not found, skipping")
+    except(yaml.scanner.ScannerError, yaml.parser.ParserError):
+        logging.debug(f"file \"{filename}\" not a valid YAML file, skipping")
+
     logging.debug(f"found {len(checks)} checks in file \"{filename}\"")
     return checks
 
@@ -193,6 +200,7 @@ def main():
     parser = argparse.ArgumentParser(description ='Check Wanda checks')
     parser.add_argument(dest='filenames', metavar='filename', nargs='+', help='checks file')
     parser.add_argument('-l', '--log-level', dest='loglevel', default='WARNING', action='store', help='set log level')
+    parser.add_argument('-m', '--match', dest='match', default='', action='store', help='only process files matching this glob')
     args = parser.parse_args()
 
     # Set up logging
@@ -211,6 +219,12 @@ def main():
     # Check all files given as parameters
     for pattern in args.filenames:
         for filename in glob.iglob(pattern, recursive=True):
+            if args.match != '' and not filename in glob.iglob(args.match, recursive=True):
+                logging.debug(f"file {filename} does not match glob {args.match}, skipping")
+                continue  
+            if os.path.isdir(filename):
+                logging.debug(f"file {filename} is a directory, skipping")
+                continue  
             try:
                 checks=getChecksfromCheckFile(filename)
                 for check in checks:
