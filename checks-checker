@@ -125,7 +125,7 @@ def checkGetDocuUrls(check: dict) -> int:
     logging.debug(f"{len(urls)} URLs found")
     if len(urls)>0:
         for url in urls:
-            print(url)
+            print(f"{check['id']}: {url}")
     return 0
 
 def checkCheckUrls(check: dict) -> int:
