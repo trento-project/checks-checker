@@ -116,6 +116,18 @@ def checkUrl(url: str) -> tuple:
 
     return (errors, warnings)
 
+def checkGetDocuUrls(check: dict) -> int:
+    # Check URLs in remediation text
+    if 'remediation' not in check:
+        logging.info(f"Check {check['id']} has no remediation section, skipping check")
+        return 0
+    urls = getUrlsFromText(check['remediation'])
+    logging.debug(f"{len(urls)} URLs found")
+    if len(urls)>0:
+        for url in urls:
+            print(url)
+    return 0
+
 def checkCheckUrls(check: dict) -> int:
     """Checks the URLs in a check
 
@@ -201,6 +213,7 @@ def main():
     parser.add_argument(dest='filenames', metavar='filename', nargs='+', help='checks file')
     parser.add_argument('-l', '--log-level', dest='loglevel', default='WARNING', action='store', help='set log level')
     parser.add_argument('-m', '--match', dest='match', default='', action='store', help='only process files matching this glob')
+    parser.add_argument('-d', '--doc-urls', dest='doc_urls', default=False, action='store_true', help='only print documentation URLs')
     args = parser.parse_args()
 
     # Set up logging
@@ -228,7 +241,10 @@ def main():
             try:
                 checks=getChecksfromCheckFile(filename)
                 for check in checks:
-                    allErrors += checkCheck(check)
+                    if args.doc_urls: 
+                        allErrors += checkGetDocuUrls(check)
+                    else:
+                        allErrors += checkCheck(check)
             except IsADirectoryError:
                 pass
 
