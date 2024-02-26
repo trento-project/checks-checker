@@ -91,28 +91,30 @@ def checkUrl(url: str) -> tuple:
 
     # get the canonical link of the document    
     canonical_links=soup.select('head link[rel*=canonical]')
-    # # Sometimes documents have multiple instances of canonical links
-    # # I've never experienced them differ, so we don't care  
-    # if len(canonical_links)>1:
-    #     print("More than 1 canonical link!")
-    #     for canonical_link in canonical_links:
-    #         print(f"Canonical link: {canonical_link['href']}")
-    canonical_url=canonical_links[0]['href']
+    # canonical_links might be empty
+    if len(canonical_links)>0 and 'href' in canonical_links[0]:
+        # # Sometimes documents have multiple instances of canonical links
+        # # I've never experienced them differ, so we don't care  
+        # if len(canonical_links)>1:
+        #     print("More than 1 canonical link!")
+        #     for canonical_link in canonical_links:
+        #         print(f"Canonical link: {canonical_link['href']}")
+        canonical_url=canonical_links[0]['href'] 
 
-    # for suse documentation, remove the index.html suffix (probably works for everyone else too) 
-    if parts.hostname == "documentation.suse.com":
-        # Python 3.9 and newer: canonical.removesuffix('index.html')
-        if canonical_url.endswith('index.html'):
-            canonical_url = canonical_url[:-10]
-    # add the fragment to the canonical URL, if any
-    if parts.fragment:
-        canonical_url += "#" + parts.fragment
-    # Warn if the URL used is not the canonical one
-    if canonical_url != url:
+        # for suse documentation, remove the index.html suffix (probably works for everyone else too) 
         if parts.hostname == "documentation.suse.com":
-            errors.append(f"Not the canonical URL! Use {canonical_url} instead of {url}")
-        else:
-            warnings.append(f"Not the canonical URL! Use {canonical_url} instead of {url}")
+            # Python 3.9 and newer: canonical.removesuffix('index.html')
+            if canonical_url.endswith('index.html'):
+                canonical_url = canonical_url[:-10]
+        # add the fragment to the canonical URL, if any
+        if parts.fragment:
+            canonical_url += "#" + parts.fragment
+        # Warn if the URL used is not the canonical one
+        if canonical_url != url:
+            if parts.hostname == "documentation.suse.com":
+                errors.append(f"Not the canonical URL! Use {canonical_url} instead of {url}")
+            else:
+                warnings.append(f"Not the canonical URL! Use {canonical_url} instead of {url}")
 
     return (errors, warnings)
 
