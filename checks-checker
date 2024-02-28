@@ -65,10 +65,10 @@ def checkUrl(url: str) -> tuple:
         response = requests.get(url)
     except requests.ConnectionError:
         errors.append(("e",f"Connection failed for {url}"))
-        return
+        return (errors, warnings)
     if not response.ok:
         errors.append(f"status {response.status_code} returned for {url}")
-        return
+        return (errors, warnings)
 
     # If a URL gets redirected, we might want to 
     # change the documentation link to the redirection target.
@@ -87,7 +87,7 @@ def checkUrl(url: str) -> tuple:
             htmlElements=soup.find_all(name=parts.fragment)        
         if len(htmlElements)==0:
             errors.append(f"fragment \"{parts.fragment}\" not found in {url}")
-            return 1
+            return (errors, warnings)
 
     # get the canonical link of the document    
     canonical_links=soup.select('head link[rel*=canonical]')
